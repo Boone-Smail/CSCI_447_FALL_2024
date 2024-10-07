@@ -1,4 +1,6 @@
-import DataSet, TrainingSet
+import DataSet, TrainingSet, FeatureSet
+from TrainingSet import *
+from FeatureSet import *
 from DataSet import *
 from typing import Generic, Any, List, Dict
 from ucimlrepo import fetch_ucirepo
@@ -12,8 +14,7 @@ if __name__=="__main__":
     #     print(i)
     
     x = temp.randomStratified(0.1)
-    
-    
+
     print("Results:\n" + str(len(x[0])) + " =? " + " {:.2f}".format(float(len(temp.data))*0.1))
     output = ""
     for i in range(x[1][x[1].index(max(x[1]))]):
@@ -25,4 +26,11 @@ if __name__=="__main__":
                 tempout += "  "
         tempout += "\n"
         output = tempout + output
+    print(output.rstrip())
+    output = ""
+    for i in x[1]:
+        output += "=="
     print(output)
+    
+    t = TrainingSet()
+    t.addDataSet(temp)

@@ -1,4 +1,6 @@
 from typing import Dict, List, Generic, Any
+import numpy as np
+from numpy import isnan
 import random
 
 class DataSet:
@@ -9,17 +11,7 @@ class DataSet:
         self.classes = _classes
         self.classifications = _classifications
         self.size = len(self.data)
-
-    def getName(self):
-        return self.name
     
-    def getData(self):
-        return self.data
-    
-    def GetFeatures(self):
-        return self.features
-    
-    @staticmethod
     def generate(_data : Dict[str,List[any]], _name : str):
         element_length = 0
         classification_name = ""
@@ -32,18 +24,34 @@ class DataSet:
                 classification_name = i
         temp_classes = []
         for i in _data[classification_name]:
-            temp_classes.append(i)
+            if i not in temp_classes:
+                temp_classes.append(i)
         temp_classifications = []
         temp_data = []
         for i in range(len(_data[classification_name])):
             temp = []
             for j in temp_features:
-                temp.append(_data[j][i])
-            if None not in temp:
+                example = _data[j][i]
+                temp.append(example)
+            nanPresent = False
+            for j in temp:
+                if np.isnan(j):
+                    nanPresent = True
+                    break
+            if None not in temp and not nanPresent:
                 temp_data.append(temp)
                 temp_classifications.append(temp_classes.index(_data[classification_name][i]))
         
         return DataSet(_name, temp_data, temp_features, temp_classes, temp_classifications)
+
+    def extractFeature(self, feature:str):
+        if (feature in self.features):
+            index = self.features.index(feature)
+            temp = []
+            for i in self.data:
+                temp.append(i[index])
+            return temp
+        return []
 
     # Given a percentage as a float (60% = 0.6), 
     # returns a stratified sample of the database
