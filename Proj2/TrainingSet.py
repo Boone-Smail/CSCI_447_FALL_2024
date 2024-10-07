@@ -1,4 +1,5 @@
 import DataSet
+from DataSet import *
 from typing import Any, Generic, Dict, List
 
 class TrainingSet:
@@ -11,5 +12,7 @@ class TrainingSet:
     def isNoise(self, tolerance):
         pass
 
-    def addDataSet(self, _data : DataSet, _name : str):
-        self.data[_name] = _data
+    def addDataSet(self, _data : DataSet):
+        self.data[_data.getName()] = _data
+
+    

@@ -45,5 +45,48 @@ class DataSet:
         
         return DataSet(_name, temp_data, temp_features, temp_classes, temp_classifications)
 
-    def randomStratified(int):
-        pass
+    # Given a percentage as a float (60% = 0.6), 
+    # returns a stratified sample of the database
+    def randomStratified(self, percent:float):
+        class_sort = {}
+        for i in self.classes:
+            class_sort[i] = []
+        for i in range(len(self.classifications)):
+            class_sort[self.classes[self.classifications[i]]].append(self.data[i])
+        temp = []
+        presence = []
+        temp_presence = []
+        for i in class_sort:
+            presence.append(len(class_sort[i])/len(self.data))
+            temp_presence.append(1)
+        
+        # start with at least 1 example from each classification
+        for i in class_sort:
+            if len(class_sort[i]) > 0:
+                temp.append(class_sort[i].pop(random.randint(1,1000)%len(class_sort[i])))
+
+        while (len(temp)/len(self.data) < percent):
+            chosen = 0
+            if (len(temp) > 0):
+                # Had an idea for a statistically based stratification idea,
+                # where after collecting 1 sample from each class you take
+                # a sample from the most likely class (povided you already
+                # know what you've added to the stratified samples). This is so
+                # you can build one that's n% the size of the original that's
+                # equally stratified while remaining roughly the same representation
+                # as the original
+                selector_idea = []
+                for i in range(len(presence)):
+                    selector_idea.append((presence[i] - (temp_presence[i]/len(temp))))
+                chosen = selector_idea.index(max(selector_idea))
+            temp.append(class_sort[self.classes[chosen]].pop(random.randint(0,1000)%(len(class_sort[self.classes[chosen]]))))
+            temp_presence[chosen] += 1
+
+        # return stratified examples
+        return (temp, temp_presence)
+    
+    def remove(self, element):
+        if len(element) == len(self.data[0]):
+            self.data.remove(element)
+        else:
+            return False
