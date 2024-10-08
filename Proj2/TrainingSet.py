@@ -1,5 +1,6 @@
 import DataSet
 import FeatureSet
+from FeatureSet import *
 from DataSet import *
 from typing import Any, Generic, Dict, List
 
@@ -10,11 +11,25 @@ class TrainingSet:
         self.KCenters = {}
         self.banned = {}
 
-    def isNoise(self, fs : FeatureSet, tolerance : float):
-        pass
+    # implements k-means to determine
+    # if cluster centroids are too close to
+    # each other in this feature
+    def markNoise(self, fs : FeatureSet, k : int, tolerance : float):
+        # Set up structures for k-means
+        accepted = {}
+        centroids = []
+        # Start with arbitrary start values for centroid positions
+        start = min(fs.values)
+        stretch = max(fs.values)-start
+        for i in k:
+            centroids.append(start + ((i/k)*stretch) + (0.5/k))
+        # Do first k-means
 
     def addDataSet(self, _data : DataSet):
         self.data[_data.name] = _data
+
+    def removeDataSet(self, _name : str):
+        return self.data.pop(_name)
 
     def classify(self, name : str, k : int, element : List[Any]):
         if name in self.data:
@@ -58,7 +73,6 @@ class TrainingSet:
                         # with the closest neighbors (reaching max
                         # first via the sorting) wins the election
                         winner = candidate
-                print(vote)
                 return winner
                 
             else:

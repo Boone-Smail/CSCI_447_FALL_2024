@@ -5,20 +5,24 @@ import random
 import array
 
 class DataSet:
-    def __init__(self, _name : str, _data : List[List[Any]], _features : List[str], _classes : List[str], _classifications : List[int]):
+    def __init__(self, _name : str, _data : List[List[Any]], _features : List[str], _classes : List[str], _classifications : List[int], _dr : Dict[str,Any]):
         self.name = _name
         self.data = _data
         self.features = _features
         self.classes = _classes
         self.classifications = _classifications
         self.size = len(self.data)
+
+        self.discrete_reference = _dr
     
     def generate(_data : Dict[str,List[any]], _name : str):
         element_length = 0
         classification_name = ""
         temp_features = []
+        temp_dr = {} # << categorical var reference table
         for i in _data:
             if "class" not in i.lower():
+                temp_entry = i
                 temp_features.append(i)
                 element_length += 1
             else:
@@ -34,6 +38,18 @@ class DataSet:
             for j in temp_features:
                 example = _data[j][i]
                 temp.append(example)
+                for j in range(len(temp)): # Check for discrete variables
+                    if isinstance(temp[j], str):
+                        cat_var = temp[j]
+                        if temp_features[j] not in temp_dr:
+                            temp_dr[temp_features[j]] = {"spot" : 1}
+                        if cat_var in temp_dr[temp_features[j]]:
+                            temp[j] = temp_dr[temp_features[j]][cat_var]# << Assign one-hot encoding
+                        else:
+                            temp_dr[temp_features[j]][cat_var] = int(temp_dr[temp_features[j]]["spot"])
+                            temp[j] = int(temp_dr[temp_features[j]]["spot"]) # New categorical value found, add it and increment "spot"
+                            temp_dr[temp_features[j]]["spot"] += 1
+
             nanPresent = False
             for j in temp:
                 if np.isnan(j):
@@ -43,7 +59,7 @@ class DataSet:
                 temp_data.append(temp)
                 temp_classifications.append(temp_classes.index(_data[classification_name][i]))
         
-        return DataSet(_name, temp_data, temp_features, temp_classes, temp_classifications)
+        return DataSet(_name, temp_data, temp_features, temp_classes, temp_classifications, temp_dr)
 
     def extractFeature(self, feature:str):
         if (feature in self.features):
@@ -113,9 +129,19 @@ class DataSet:
                 return True
         return False
     
-    def stratified(self, folds):
+    def stratified(self, folds : int):
         split = []
-        for i in range(folds):
+        while len(split) < folds:
+            temp = random.random()
+            if temp > 0.03 and temp < 0.97: # Just making sure no folds are too small
+                passes = True
+                for i in split:
+                    if abs(temp-i) < 0.4:
+                        passes = False
+                        break
+                if passes:
+                    split.append(temp)
+                    
             split.append(random.random())
         split = sorted(split)
         split.append(1)

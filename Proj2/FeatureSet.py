@@ -11,3 +11,5 @@ class FeatureSet:
     def generateFeatureset(data, feature_name:str):
         temp_vals = data.extractFeature(feature_name)
         return FeatureSet(feature_name, temp_vals, data.classifications)
+    
+    
