@@ -5,6 +5,11 @@ from DataSet import *
 from typing import Generic, Any, List, Dict
 from ucimlrepo import fetch_ucirepo
 
+def k_tune(data, min_k = 3):
+    st = data.stratified()
+    acc = []
+    
+
 if __name__=="__main__":
     # data = fetch_ucirepo(id=14)
     data = fetch_ucirepo(id=90)
@@ -34,3 +39,7 @@ if __name__=="__main__":
     
     t = TrainingSet()
     t.addDataSet(temp)
+    c = t.classify(temp.name, 10, x[0][9])
+    print(c)
+
+    y = temp.stratified(10)

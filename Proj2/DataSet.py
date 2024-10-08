@@ -2,6 +2,7 @@ from typing import Dict, List, Generic, Any
 import numpy as np
 from numpy import isnan
 import random
+import array
 
 class DataSet:
     def __init__(self, _name : str, _data : List[List[Any]], _features : List[str], _classes : List[str], _classifications : List[int]):
@@ -95,6 +96,41 @@ class DataSet:
     
     def remove(self, element):
         if len(element) == len(self.data[0]):
-            self.data.remove(element)
+            index = self.data.index(element)
+            self.data.pop(index)
+            c = self.classifications.pop(index)
+            return c 
         else:
             return False
+        
+    def  add(self, element : List[Any], classification : int):
+        if len(element) == len(self.data[0]):
+            for j in range(len(element)):
+                if type(element[j]) != type(self.data[0][j]):
+                    return False
+                self.data.append(element)
+                self.classifications.append(classification)
+                return True
+        return False
+    
+    def stratified(self, folds):
+        split = []
+        for i in range(folds):
+            split.append(random.random())
+        split = sorted(split)
+        split.append(1)
+
+        print(split)
+        
+        spot = 0
+        ret = []
+        temp = []
+        for i in range(len(self.data)):
+            if i <= split[spot]*len(self.data):
+                temp.append(self.data[i])
+            else:
+                ret.append(temp)
+                temp = []
+                temp.append(self.data[i])
+                spot += 1
+        return ret
