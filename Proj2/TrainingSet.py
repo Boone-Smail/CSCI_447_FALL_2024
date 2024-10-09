@@ -9,7 +9,7 @@ class TrainingSet:
         self.data : Dict[str, DataSet] = {}
         self.reduced : Dict[str, DataSet] = {}
         self.KCenters = {}
-        self.banned = {}
+        self.banned : Dict[str, List[str]] = {}
 
     # helper function, designed to make a quick 
     # distance from 0^n accesible
@@ -17,6 +17,13 @@ class TrainingSet:
         result = 0
         for i in l:
             result += i**2
+        return result**0.5
+    
+    # helper function, returns distance between two points
+    def distance_between(self, l1 : List[Any], l2 : List[Any]):
+        result = 0
+        for i in range(len(l1)):
+            result += (l1[i] - l2[i]) ** 2
         return result**0.5
 
     # helper function for markNoise(...), it's meant to
@@ -246,4 +253,31 @@ class TrainingSet:
             # (only including those of the same class)
             accepted = {}
             for i in sort:
-                pass
+                # start by finding the points within acceptable
+                # distance to other points
+                accepted[i] = {}
+                for j in range(len(sort[i])):
+                    p1 = self.data[_name].data[sort[i][j]]
+                    for k in range(len(sort[i])-(i+1)):
+                        if j != k:
+                            p2 = self.data[_name].data[sort[i][j+k]]
+                            if (self.distance_between(p1, p2) < _max_sd*sd[i]):
+                                if sort[i][j] in accepted[i]:
+                                    accepted[i][sort[i][j]].append(j+k)
+                                else:
+                                    accepted[i][sort[i][j]] = [j+k]
+
+        # finish by building the dataset
+        # using only acceptable points
+        # (edited k-nearest neighbor reduction)
+        temp_data = []
+        temp_classifications = []
+        for i in accepted: # for each classification in accepted
+            for j in accepted[i]: # for each mapping in the classification
+                if len(accepted[i][j]) > _min_neighbors: # If this point has at least min_neighbors (in range, done earlier)
+                    temp_data.append(self.data[_name].data[j])
+                    temp_classifications.append(i)
+        # build data set, and store in the right place
+        d = DataSet(_name, temp_data, self.data[_name].features, self.data[_name].classes, temp_classifications, self.data[_name].discrete_reference)
+        self.reduced[_name] = d
+        return d

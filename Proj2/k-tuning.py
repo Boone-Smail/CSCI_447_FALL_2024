@@ -68,7 +68,8 @@ def k_tune(data : DataSet, test_set : List[List[Any]], test_set_classifications 
     
     return max_ind # Diminishing returns found, return k with max accuracy 
     
-
+def epsilon_tune(data : DataSet, test_set : List[List[Any]], test_set_classifications : List[int], min_epsilon = 0.5):
+    pass
 
 
 if __name__=="__main__":
