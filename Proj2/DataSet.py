@@ -42,7 +42,7 @@ class DataSet:
                     if isinstance(temp[j], str):
                         cat_var = temp[j]
                         if temp_features[j] not in temp_dr:
-                            temp_dr[temp_features[j]] = {"spot" : 1}
+                            temp_dr[temp_features[j]] = {"spot" : 0}
                         if cat_var in temp_dr[temp_features[j]]:
                             temp[j] = temp_dr[temp_features[j]][cat_var]# << Assign one-hot encoding
                         else:
@@ -81,6 +81,7 @@ class DataSet:
         temp = []
         presence = []
         temp_presence = []
+        temp_order = []
         for i in class_sort:
             presence.append(len(class_sort[i])/len(self.data))
             temp_presence.append(1)
@@ -89,7 +90,9 @@ class DataSet:
         for i in class_sort:
             if len(class_sort[i]) > 0:
                 temp.append(class_sort[i].pop(random.randint(1,1000)%len(class_sort[i])))
+                temp_order.append(i)
 
+        # Now fill with examples until the stratified example matches or exceeds size        
         while (len(temp)/len(self.data) < percent):
             chosen = 0
             if (len(temp) > 0):
@@ -106,9 +109,10 @@ class DataSet:
                 chosen = selector_idea.index(max(selector_idea))
             temp.append(class_sort[self.classes[chosen]].pop(random.randint(0,1000)%(len(class_sort[self.classes[chosen]]))))
             temp_presence[chosen] += 1
+            temp_order.append(chosen)
 
         # return stratified examples
-        return (temp, temp_presence)
+        return (temp, temp_presence, temp_order)
     
     def remove(self, element):
         if len(element) == len(self.data[0]):
@@ -136,27 +140,48 @@ class DataSet:
             if temp > 0.03 and temp < 0.97: # Just making sure no folds are too small
                 passes = True
                 for i in split:
-                    if abs(temp-i) < 0.4:
+                    if abs(temp-i) < 0.04:
                         passes = False
                         break
                 if passes:
                     split.append(temp)
-                    
-            split.append(random.random())
+
         split = sorted(split)
         split.append(1)
-
-        print(split)
         
+        # Now sort the data
+        sort : Dict[int, List[int]] = {}
+        for i in range(len(self.data)):
+            if self.classifications[i] in sort:
+                sort[self.classifications[i]].append(i)
+            else:
+                sort[self.classifications[i]] = [i]
+
+        # And put the sorted data into their stratified folds
         spot = 0
+        subspot = 0
+        available = []
+        for i in sort:
+            if len(sort[i]) > 0:
+                available.append(i)
         ret = []
         temp = []
         for i in range(len(self.data)):
             if i <= split[spot]*len(self.data):
-                temp.append(self.data[i])
+                temp.append(self.data[sort[available[subspot]][0]])
+                sort[available[subspot]].pop(0)
             else:
                 ret.append(temp)
                 temp = []
-                temp.append(self.data[i])
-                spot += 1
+                temp.append(self.data[sort[available[subspot]][0]])
+                sort[available[subspot]].pop(0)
+                spot += 1 # << Move spot so the next item goes to the next "fold"
+            # Move subspot so element from next
+            # classification is selected
+            if len(sort[available[subspot]]) == 0:
+                available.pop(subspot)
+            else:
+                subspot += 1
+            if (subspot >= len(available)):
+                subspot = 0
         return ret
