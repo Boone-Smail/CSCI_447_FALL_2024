@@ -160,11 +160,54 @@ class TrainingSet:
         #         print("\t",i)
 
     def removeDataSet(self, _name : str):
-        self.banned.pop(_name)
+        if _name not in self.reduced:
+            self.banned.pop(_name)
         return self.data.pop(_name)
+    
+    def removeReduced(self, _name : str):
+        if _name not in self.data:
+            self.banned.pop(_name)
+        return self.reduced.pop(_name)
 
+    # Note that to classify an element in reduced, it cannot
+    # exist in data
     def classify(self, name : str, k : int, element : List[Any]):
-        if name in self.data:
+        if name in self.reduced:
+            vote = {}
+            dist = []
+            index_ref = []
+            count = 0
+            # Find distances
+            for i in self.reduced[name].data:
+                index_ref.append(count)
+                dist.append(self.distance_between(i, element))
+                count += 1
+            # sort distances
+            for i in range(len(dist)):
+                for j in range(len(dist) - (i+1)):
+                    if i != j:
+                        if dist[i] > dist[j+i]:
+                            temp = dist[i]
+                            dist[i] = dist[i+j]
+                            dist[i+j] = temp
+
+                            temp = index_ref[i]
+                            index_ref[i] = index_ref[i+j]
+                            index_ref[i+j] = temp
+            max = 0
+            max_ind = -1
+            for i in range(k):
+                chosen = self.reduced[name].classifications[index_ref[i]]
+                if chosen in vote:
+                    vote[chosen] += 1
+                else:
+                    vote[chosen] = 1
+                if vote[chosen] > max:
+                    max = vote[chosen]
+                    max_ind = chosen
+            # return result of plurality vote
+            return max_ind
+        elif name in self.data:
             if len(element) == len(self.data[name].data[0]):
                 vote = {}
                 distances = []
@@ -209,8 +252,6 @@ class TrainingSet:
                 
             else:
                 return -2
-        elif name in self.reduced:
-            return 0
         else:
             return -1
     
@@ -219,16 +260,18 @@ class TrainingSet:
     # within delta (_max_sd) range. Note that the reduced dataset
     # goes into 'reduced'. Also note that _max_sd plays on the standard
     # deviation of the dataset, and is intended to be used in a 0.5-3.5 range.
-    def reduce(self, _name : str, _min_neighbors : int, _max_sd : float):
+    # This function is destructive, and will overwrite any data
+    # in reduced.
+    def reduce(self, _name : str, _min_neighbors_percent : float, _max_sd : float):
         if _name in self.data:
             # Start by sorting the data
-            sort = []
-            for i in range(len(self.data[_name])):
+            sort = {}
+            for i in range(len(self.data[_name].data)):
                 c = self.data[_name].classifications[i]
                 if c in sort:
                     sort[c].append(i)
                 else:
-                    sort[c] = [i]
+                    sort[c] = [i] 
 
             # Then, take the sorted data and find the standard deviation of each
             # classification
@@ -246,8 +289,9 @@ class TrainingSet:
                     temp = (self.distance(self.data[_name].data[j]) - avg)
                     squared_sum += temp**2
                 # Put standard deviation in sd
-                sd.append(squared_sum/(len(sort[i])-1))
+                sd.append(squared_sum/((len(sort[i])-1) if len(sort) > 1 else 1))
 
+            print("\tFinding acceptable points...")
             # Then find the distance from each point
             # and mapping each point to what's in their range
             # (only including those of the same class)
@@ -258,7 +302,7 @@ class TrainingSet:
                 accepted[i] = {}
                 for j in range(len(sort[i])):
                     p1 = self.data[_name].data[sort[i][j]]
-                    for k in range(len(sort[i])-(i+1)):
+                    for k in range(len(sort[i])-(j+1)):
                         if j != k:
                             p2 = self.data[_name].data[sort[i][j+k]]
                             if (self.distance_between(p1, p2) < _max_sd*sd[i]):
@@ -267,17 +311,20 @@ class TrainingSet:
                                 else:
                                     accepted[i][sort[i][j]] = [j+k]
 
-        # finish by building the dataset
-        # using only acceptable points
-        # (edited k-nearest neighbor reduction)
-        temp_data = []
-        temp_classifications = []
-        for i in accepted: # for each classification in accepted
-            for j in accepted[i]: # for each mapping in the classification
-                if len(accepted[i][j]) > _min_neighbors: # If this point has at least min_neighbors (in range, done earlier)
-                    temp_data.append(self.data[_name].data[j])
-                    temp_classifications.append(i)
-        # build data set, and store in the right place
-        d = DataSet(_name, temp_data, self.data[_name].features, self.data[_name].classes, temp_classifications, self.data[_name].discrete_reference)
-        self.reduced[_name] = d
-        return d
+            # finish by building the dataset
+            # using only acceptable points
+            # (edited k-nearest neighbor reduction)
+            print("\tBuilding data set... ")
+            print("\t" + str(len(accepted.keys())))
+            temp_data = []
+            temp_classifications = []
+            for i in accepted: # for each classification in accepted
+                for j in accepted[i]: # for each mapping in the classification
+                    if len(accepted[i][j]) > len(accepted[i])*_min_neighbors_percent: # If this point has at least min_neighbors (in range, done earlier)
+                        temp_data.append(self.data[_name].data[j])
+                        temp_classifications.append(i)
+            # build data set, and store in the right place
+            print(len(temp_data))
+            d = DataSet(_name, temp_data, self.data[_name].features, self.data[_name].classes, temp_classifications, self.data[_name].discrete_reference)
+            self.reduced[_name] = d
+            return d

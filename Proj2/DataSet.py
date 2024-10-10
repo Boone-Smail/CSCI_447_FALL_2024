@@ -21,7 +21,7 @@ class DataSet:
         temp_features = []
         temp_dr = {} # << categorical var reference table
         for i in _data:
-            if "class" not in i.lower():
+            if "class" not in i.lower() and "type_of" not in i.lower() and "rings" != i.lower() and ("area" == i.lower() and _name != "hardware"):
                 temp_entry = i
                 temp_features.append(i)
                 element_length += 1
@@ -29,7 +29,8 @@ class DataSet:
                 classification_name = i
         temp_classes = []
         for i in _data[classification_name]:
-            if i not in temp_classes:
+            print(i)
+            if i not in temp_classes and not np.isnan(i):
                 temp_classes.append(i)
         temp_classifications = []
         temp_data = []
@@ -55,7 +56,13 @@ class DataSet:
                 if np.isnan(j):
                     nanPresent = True
                     break
+
+            if np.isnan(_data[classification_name][i]):
+                nanPresent = True
+
             if None not in temp and not nanPresent:
+                print(_data[classification_name][i])
+                
                 temp_data.append(temp)
                 temp_classifications.append(temp_classes.index(_data[classification_name][i]))
         
@@ -127,10 +134,11 @@ class DataSet:
         if len(element) == len(self.data[0]):
             for j in range(len(element)):
                 if type(element[j]) != type(self.data[0][j]):
-                    return False
-                self.data.append(element)
-                self.classifications.append(classification)
-                return True
+                    pass
+                    # return False
+            self.data.append(element)
+            self.classifications.append(classification)
+            return True
         return False
     
     def stratified(self, folds : int):

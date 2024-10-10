@@ -61,22 +61,64 @@ def k_tune(data : DataSet, test_set : List[List[Any]], test_set_classifications 
     k = min_k + 1
     while (max_ind + min_k >= len(acc)):
         acc.append(_single_k_tune(data, st, test_set, test_set_classifications, k)) # Find accuracy of increased k
-        if (acc[-1] >= acc[max_ind]): # Check for new max
+        if (acc[-1] > acc[max_ind]): # Check for new max
             max_ind = len(acc)-1 
         k += 1
         print("===========\nK: " + str(k-1) + "\t Accuracy: " + "{:.3f}".format(acc[-1]))
     
     return max_ind # Diminishing returns found, return k with max accuracy 
     
-def epsilon_tune(data : DataSet, test_set : List[List[Any]], test_set_classifications : List[int], min_epsilon = 0.5):
-    pass
+# Finds best standard deviations for the provided min_neighbors
+def reduce_single(data :DataSet, test_set : List[List[Any]], test_set_classifications : List[int], k : int, min_neighbors : int):
+    t = TrainingSet()
+    t.addDataSet(data)
+    acc = []
+    for i in range(7):
+        temp = []
+        t.reduce(data.name, min_neighbors, ((0.5*i)+1))
+        print("classifying...\t", len(test_set)) 
+        for j in range(len(test_set)):
+            if t.classify(data.name, k, test_set[j]) == test_set_classifications[j]:
+                temp.append(1)
+            else:
+                temp.append(0)
+        acc.append(sum(temp)/len(temp))
+        print("\t", acc[-1])
+    # return most accurate sd
+    return ((acc.index(max(acc))*0.5)+0.5)
+            
 
+# A function to tune how finely the data is reduced
+# so that the best reduction's standard deviation is found
+def tune_reduction_k(data : DataSet, test_set : List[List[Any]], test_set_classifications : List[int], k : int):
+    # find best standard deviation     
+    print("Doing reductions...")
+    sd = reduce_single(data, test_set, test_set_classifications, k, 0.01)
+
+    # Use best standard deviation value to reduce and tune
+    print("Tunining k...")
+    t = TrainingSet()
+    t.addDataSet(data)
+    reduced = t.reduce(data.name, 0.01, sd)
+
+    # now do k-tuning
+    return k_tune(reduced, test_set, test_set_classifications, k)
 
 if __name__=="__main__":
     # First, fetch all data
     data = {}
+    
+    # Commented out for time constraint; ran out of time
+    # to solve any regression so all regression problems
+    # and related entities are removed
+    # data["abalone"] = fetch_ucirepo(id=1)
+    # data["hardware"] = fetch_ucirepo(id=29)
+    # data["fires"] = fetch_ucirepo(id=162)
+    # data["glass"] = fetch_ucirepo(id=42)
     data["breast cancer"] = fetch_ucirepo(id=14)
     data["soybean"] = fetch_ucirepo(id=90)
+
+    regression = ['abalone', 'hardware', 'fires']
 
     # Then, tune k for each dataset
     for i in data:
@@ -108,5 +150,12 @@ if __name__=="__main__":
         # c = t.classify(temp.name, 10, x[0][9])
         # print(c)
 
-        k_test = k_tune(temp, x[0], x[2], 20)
-        print("Best k: " + str(k_test + 1) + "\n=-=-=-=-=-=-=-=-=-=-=\n")
+        # k_test = k_tune(temp, x[0], x[2], 7)
+        # print("Best k: " + str(k_test + 1) + "\n=-=-=-=-=-=-=-=-=-=-=\n")
+
+        if i in regression:
+            r_test = tune_reduction_k(temp, x[0], x[2], 7)
+            print("Best k:", r_test + 1,"\n=-=-=-=-=-=-=-=-=-=\n")
+        else:
+            best_k = k_tune(temp, x[0], x[2], 7)
+            print("Best k:", best_k)
