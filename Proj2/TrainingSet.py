@@ -290,8 +290,6 @@ class TrainingSet:
                     squared_sum += temp**2
                 # Put standard deviation in sd
                 sd.append(squared_sum/((len(sort[i])-1) if len(sort) > 1 else 1))
-
-            print("\tFinding acceptable points...")
             # Then find the distance from each point
             # and mapping each point to what's in their range
             # (only including those of the same class)
@@ -305,7 +303,7 @@ class TrainingSet:
                     for k in range(len(sort[i])-(j+1)):
                         if j != k:
                             p2 = self.data[_name].data[sort[i][j+k]]
-                            if (self.distance_between(p1, p2) < _max_sd*sd[i]):
+                            if (self.distance_between(p1, p2) <= _max_sd*sd[i]):
                                 if sort[i][j] in accepted[i]:
                                     accepted[i][sort[i][j]].append(j+k)
                                 else:
@@ -314,17 +312,17 @@ class TrainingSet:
             # finish by building the dataset
             # using only acceptable points
             # (edited k-nearest neighbor reduction)
-            print("\tBuilding data set... ")
-            print("\t" + str(len(accepted.keys())))
             temp_data = []
             temp_classifications = []
             for i in accepted: # for each classification in accepted
                 for j in accepted[i]: # for each mapping in the classification
-                    if len(accepted[i][j]) > len(accepted[i])*_min_neighbors_percent: # If this point has at least min_neighbors (in range, done earlier)
+                    if len(accepted[i][j]) >= len(accepted[i])*_min_neighbors_percent: # If this point has at least min_neighbors (in range, done earlier)
+                        temp_data.append(self.data[_name].data[j])
+                        temp_classifications.append(i)
+                    elif (len(accepted[i]) == 1):
                         temp_data.append(self.data[_name].data[j])
                         temp_classifications.append(i)
             # build data set, and store in the right place
-            print(len(temp_data))
             d = DataSet(_name, temp_data, self.data[_name].features, self.data[_name].classes, temp_classifications, self.data[_name].discrete_reference)
             self.reduced[_name] = d
             return d

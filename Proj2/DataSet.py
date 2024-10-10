@@ -29,8 +29,10 @@ class DataSet:
                 classification_name = i
         temp_classes = []
         for i in _data[classification_name]:
-            print(i)
-            if i not in temp_classes and not np.isnan(i):
+            if i not in temp_classes:
+                if type(i) != str:
+                    if np.isnan(i):
+                        continue
                 temp_classes.append(i)
         temp_classifications = []
         temp_data = []
@@ -56,13 +58,11 @@ class DataSet:
                 if np.isnan(j):
                     nanPresent = True
                     break
-
-            if np.isnan(_data[classification_name][i]):
-                nanPresent = True
+            if type(_data[classification_name][i]) != str:
+                if np.isnan(_data[classification_name][i]):
+                    nanPresent = True
 
             if None not in temp and not nanPresent:
-                print(_data[classification_name][i])
-                
                 temp_data.append(temp)
                 temp_classifications.append(temp_classes.index(_data[classification_name][i]))
         
